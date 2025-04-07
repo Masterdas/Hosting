@@ -1,4 +1,4 @@
-<h1 align="center"><u>Web Hosting</u></h1>
+<h1 align="center"><u>Hosting Server</u></h1>
 
 <img src="https://raw.githubusercontent.com/Masterdas/Hosting/refs/heads/main/IMG_20250407_224553.jpg" alt="Hosting screenshot">
 <h3 align="center"><a href="https:">demo video click</a></h3>
