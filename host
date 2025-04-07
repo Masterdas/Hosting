@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# Colors
+RED='\033[1;31m'
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+banner() {
+  clear
+echo -e "\e[1;36m"
+echo "             ██╗  ██╗ ██████╗ ███████╗████████╗"
+echo "             ██║  ██║██╔═══██╗██╔════╝╚══██╔══╝"
+echo "             ███████║██║   ██║███████╗   ██║   "
+echo "             ██╔══██║██║   ██║╚════██║   ██║   "
+echo -e "\e[1;36m             ██║  ██║╚██████╔╝███████║   ██║ \e[1;33m v:1.0\e${NC}"
+echo -e "\e[1;36m             ╚═╝  ╚═╝ ╚═════╝ ╚══════╝   ╚═╝   "
+echo -e "\e[1;34m<=======================================================>\e[0m\n"
+echo -e "\e[1;32m       WELCOME To Host => \e[1;36mCreate by Mahadeb R..das\e[0m\n"
+echo -e "\e[1;32m<=======================================================>\e[0m"
+echo -e "\e[1;31m   YouTube Bangla => \e[1;33mhttps://youtube.com/@zerodarknexus\e[0m"
+echo -e "\e[1;32m<=======================================================>\e[0m"
+echo -e "\e[1;35m       Subscribe my YouTube Channel ZeroDark Nexus\e[0m"
+echo -e "\e[1;34m<=======================================================>\e[0m"
+}
+
+# Show Main Menu
+main_menu() {
+  clear
+  banner
+  echo -e "${CYAN}1) Select File & Port${NC}"
+  echo -e "${CYAN}2) Select Server Only${NC}"
+  echo -e "${CYAN}0) Exit${NC}"
+  echo -n -e "${YELLOW}Choose an option: ${NC}"
+  read choice
+}
+
+# Server Menu
+server_menu() {
+  echo -e "${CYAN}1) ssh Tunnel${NC}"
+  echo -e "${CYAN}2) Cloudflared${NC}"
+  echo -e "${CYAN}3) Tunnelmole${NC}"
+  echo -e "${CYAN}4) Serveo${NC}"
+  echo -e "${CYAN}5) Localhost Only${NC}"
+  echo -n -e "${YELLOW}Select tunnel server: ${NC}"
+  read srv
+}
+
+# Start tunnel server
+start_tunnel() {
+  rm -f raw_log.txt log.text
+  sleep 2
+
+  case $srv in
+    1) (ssh -R 80:localhost:$port nokey@localhost.run) > raw_log.txt & ;;
+    2) (cloudflared tunnel --url http://localhost:$port --no-autoupdate) > raw_log.txt & ;;
+    3) (tunnelmole $port) > raw_log.txt & ;;
+    4) (ssh -o StrictHostKeyChecking=no -R 80:localhost:$port serveo.net) > raw_log.txt & ;;
+    5) echo "http://127.0.0.1:$port" > raw_log.txt ;;
+    *) echo -e "${RED}Invalid server choice.${NC}"; return ;;
+  esac
+
+  sleep 6
+
+  case $srv in
+    1) tunnel_url=$(grep -o 'https://[0-9a-z]*\.lhr.life' raw_log.txt | head -n 1) ;;
+    2) tunnel_url=$(grep -oE 'https://[^ ]*\.trycloudflare.com' raw_log.txt | head -n 1) ;;
+    3) tunnel_url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.tunnelmole\.net' raw_log.txt | head -n 1) ;;
+    4) tunnel_url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.serveo\.net' raw_log.txt | head -n 1) ;;
+    5) tunnel_url=$(cat raw_log.txt) ;;
+  esac
+
+  if [[ -n "$tunnel_url" ]]; then
+    clear
+    banner
+    printf "\n${RED}[${white}?${RED}]${GREEN} Starting Server on Port:${YELLOW}${port}\n"
+    echo -e "\n${GREEN}[✔] Victim URL: ${YELLOW}$tunnel_url${NC}"
+    echo "$tunnel_url" > log.text
+    if command -v termux-open-url >/dev/null 2>&1; then
+      termux-open-url "$tunnel_url"
+    fi
+  else
+    echo -e "${RED}[✘] Failed to get tunnel link.${NC}"
+    echo "ERROR" > log.text
+  fi
+
+  echo -e "${CYAN}[i] Press Ctrl+C to stop tunnel.${NC}"
+  tail -f /dev/null
+}
+
+# Main Flow
+main() {
+  while true; do
+    main_menu
+    case $choice in
+      1)
+        echo -n -e "${YELLOW}Please Enter folder path (${NC}file/path/index.html${YELLOW}): ${NC}"
+        read path
+        [[ ! -f "$path/index.html" ]] && echo -e "${RED}index.html not found.${NC}" && sleep 2 && continue
+
+        echo -n -e "${YELLOW}Enter port (${NC}default 8080${YELLOW}): ${NC}"
+        read port
+        port=${port:-8080}
+
+        php -S 127.0.0.1:$port -t "$path" > /dev/null 2>&1 &
+        server_menu
+        start_tunnel
+        ;;
+      2)
+        echo -n -e "${YELLOW}Enter port (${NC}default 8080${YELLOW}): ${NC}"
+        read port
+        port=${port:-8080}
+        server_menu
+        start_tunnel
+        ;;
+      0) echo -e "${RED}Exiting...${NC}"; exit 0 ;;
+      *) echo -e "${RED}Invalid option.${NC}"; sleep 2 ;;
+    esac
+  done
+}
+
+main
